@@ -104,7 +104,7 @@ The system logs the following performance metrics:
 - **Success Rate** (Percentage of successful block additions).
 - **Efficiency** (TPS/Energy used).
 
-  ## Screenshots  
+## Screenshots  
 
 ### Login Page  
 ![Home Page](./Screen1.png)  
@@ -121,7 +121,6 @@ The system logs the following performance metrics:
 ### Records Management  
 ![User Profile](./Screen5.png)  
 
-
 ## Future Enhancements
 
 - **Implement IPFS for Decentralized Storage**.
@@ -129,9 +128,9 @@ The system logs the following performance metrics:
 - **Integrate AI-based Anomaly Detection for Records**.
 - **Implement Multi-Signature Authentication**.
 
-  ## Contact
-     NishantChaubey534
-     chaubeynishant2@gmail.com
+## Contact
+     NishantChaubey534 
+     Email-chaubeynishant2@gmail.com
 
 ## License
 
