@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Blockchain System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<style>
+  body {
+    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+</style>
+<body class="bg-gray-100">
+<h1 class="text-4xl font-bold  text-center text-white absolute top-2 left-1/2 transform -translate-x-1/2">Blockchain Medical System</h1>
+    <!-- Login Section -->
+    <div id="login-section" class="min-h-screen flex items-center justify-center ">
+    <div class="bg-white p-8 rounded-lg shadow-md w-96">
+        <h1 class="text-2xl font-bold mb-6 text-center"> Enter Your Credentials</h1>
+        <form id="loginForm" onsubmit="return loginUser(event)">
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Select Role:</label>
+                <select id="role" class="w-full p-2 border rounded" onchange="togglePatientIdField()">
+                    <option value="patient">Patient</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="pharmacy">Pharmacy</option>
+                    <option value="department">Department</option>
+                </select>
+            </div>
+            <div id="patient-id-field" class="mb-4">
+                <label class="block text-gray-700 mb-2">Patient ID:</label>
+                <input type="text" id="patientId" class="w-full p-2 border rounded">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Password:</label>
+                <input type="password" id="password" class="w-full p-2 border rounded">
+            </div>
+            <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+                Login
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function togglePatientIdField() {
+        const role = document.getElementById("role").value;
+        const patientIdField = document.getElementById("patient-id-field");
+
+        if (role === "patient") {
+            patientIdField.style.display = "block"; // Show patient ID field
+        } else {
+            patientIdField.style.display = "none"; // Hide patient ID field
+        }
+    }
+
+    // Run on page load to ensure proper display
+    window.onload = togglePatientIdField;
+</script>
+
+
+    <!-- Doctor Dashboard -->
+    <div id="doctor-dashboard" class="hidden p-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-white">Doctor Dashboard</h1>
+                <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                    Logout
+                </button>
+            </div>
+            <div class="space-y-4">
+                <button onclick="showAddRecordForm()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    Add Medical Record
+                </button>
+                <button onclick="validateBlock()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">
+                    Validate and Add Block
+                </button>
+                <button onclick="viewRecords()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    View Patient Records
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Dashboard -->
+    <div id="patient-dashboard" class="hidden p-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold">Patient Dashboard</h1>
+                <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                    Logout
+                </button>
+            </div>
+            <button onclick="viewMyRecords()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                View My Records
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Record Form -->
+    <div id="add-record-form" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg w-96">
+            <h2 class="text-xl font-bold mb-4">Add Medical Record</h2>
+            <form onsubmit="return submitRecord(event)">
+                <div class="space-y-4">
+                    <input type="text" id="medicalData" placeholder="Medical Data" class="w-full p-2 border rounded">
+                    <input type="text" id="doctorId" placeholder="Doctor ID" class="w-full p-2 border rounded">
+                    <input type="text" id="department" placeholder="Department" class="w-full p-2 border rounded">
+                    <input type="text" id="medicine" placeholder="Medicine" class="w-full p-2 border rounded">
+                </div>
+                <div class="mt-6 flex justify-between">
+                    <button type="button" onclick="hideAddRecordForm()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Submit
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Records Section -->
+    <div id="view-records" class="hidden p-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Patient Records</h2>
+                <button onclick="hideRecords()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                    Back
+                </button>
+            </div>
+            <div id="records-content" class="bg-white p-4 rounded shadow"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        const API_BASE = 'http://localhost:5000';
+
+        // Login Functions
+        async function loginUser(event) {
+            event.preventDefault();
+            const role = document.getElementById('role').value;
+            const password = document.getElementById('password').value;
+            const patientId = document.getElementById('patientId').value;
+
+            const response = await fetch(`${API_BASE}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role, password, patientId })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                currentUser = {
+                    userType: result.userType,
+                    patientId: result.patientId || null
+                };
+                showDashboard(result.userType);
+            } else {
+                alert(result.message);
+            }
+        }
+
+        // Dashboard Functions
+        function showDashboard(userType) {
+            document.getElementById('login-section').classList.add('hidden');
+            document.querySelectorAll('[id$="-dashboard"]').forEach(el => el.classList.add('hidden'));
+
+            switch(userType) {
+                case 'doctor':
+                    document.getElementById('doctor-dashboard').classList.remove('hidden');
+                    break;
+                case 'patient':
+                    document.getElementById('patient-dashboard').classList.remove('hidden');
+                    break;
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('login-section').classList.remove('hidden');
+            document.querySelectorAll('[id$="-dashboard"]').forEach(el => el.classList.add('hidden'));
+            hideAddRecordForm();
+            hideRecords();
+        }
+
+        // Record Functions
+        async function submitRecord(event) {
+            event.preventDefault();
+            const authData = await showAuthModal();
+            if (!authData) return;
+
+            const record = {
+                medicalData: document.getElementById('medicalData').value,
+                doctorId: document.getElementById('doctorId').value,
+                department: document.getElementById('department').value,
+                medicine: document.getElementById('medicine').value,
+                patientId: authData.patientId,
+                patientPwd: authData.password
+            };
+
+            const response = await fetch(`${API_BASE}/add_record`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(record)
+            });
+
+            const result = await response.json();
+            alert(result.message);
+            if (result.success) {
+                hideAddRecordForm();
+                // Clear form fields
+                document.getElementById('medicalData').value = '';
+                document.getElementById('doctorId').value = '';
+                document.getElementById('department').value = '';
+                document.getElementById('medicine').value = '';
+            }
+        }
+
+        // Blockchain Functions
+        async function validateBlock() {
+            const response = await fetch(`${API_BASE}/validate_block`, { method: 'POST' });
+            const result = await response.json();
+            alert(result.message);
+        }
+
+        async function viewRecords() {
+            const authData = await showAuthModal();
+            if (!authData) return;
+
+            const response = await fetch(`${API_BASE}/get_chain`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(authData)
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                document.getElementById('view-records').classList.remove('hidden');
+                document.getElementById('records-content').innerHTML =
+                    `<pre>${JSON.stringify(result.chain, null, 2)}</pre>`;
+            } else {
+                alert(result.message);
+            }
+        }
+
+        async function viewMyRecords() {
+            const password = prompt("Enter your patient password:");
+            if (!password) return;
+
+            const response = await fetch(`${API_BASE}/get_chain`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    patientId: currentUser.patientId,
+                    password: password
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                document.getElementById('view-records').classList.remove('hidden');
+                document.getElementById('records-content').innerHTML =
+                    `<pre>${JSON.stringify(result.chain, null, 2)}</pre>`;
+            } else {
+                alert(result.message);
+            }
+        }
+
+        // UI Helpers
+        function showAddRecordForm() {
+            document.getElementById('add-record-form').classList.remove('hidden');
+        }
+
+        function hideAddRecordForm() {
+            document.getElementById('add-record-form').classList.add('hidden');
+        }
+
+        function hideRecords() {
+            document.getElementById('view-records').classList.add('hidden');
+        }
+
+  async function showAuthModal() {
+    return new Promise(resolve => {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center';
+        modal.innerHTML = `
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h3 class="text-lg font-bold mb-4">Patient Authentication</h3>
+                <input type="text" id="authPatientId" placeholder="Patient ID" class="w-full p-2 border rounded mb-2">
+                <input type="password" id="authPassword" placeholder="Password" class="w-full p-2 border rounded">
+                <div class="mt-4 flex justify-between">
+                    <button class="cancel-btn bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                        Cancel
+                    </button>
+                    <button class="submit-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Submit
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Handle submit button click
+        const submitBtn = modal.querySelector('.submit-btn');
+        const cancelBtn = modal.querySelector('.cancel-btn');
+
+        const handleSubmit = () => {
+            const patientId = modal.querySelector('#authPatientId').value;
+            const password = modal.querySelector('#authPassword').value;
+            modal.remove();
+            resolve({ patientId, password });
+        };
+
+        const handleCancel = () => {
+            modal.remove();
+            resolve(null);
+        };
+
+        submitBtn.addEventListener('click', handleSubmit);
+        cancelBtn.addEventListener('click', handleCancel);
+
+        document.body.appendChild(modal);
+    });
+        }
+    </script>
+</body>
+</html>
